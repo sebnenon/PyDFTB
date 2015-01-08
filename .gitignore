@@ -1,0 +1,8 @@
+# skip compiled python libraries
+*.pyc
+
+# skip temp files
+*.*~
+
+# skip unusefull tools
+det
