@@ -1,3 +1,5 @@
+# PyDFTB
+
 This is a tentative library and toolkit for DFTB+.
 
 This is not intended to be perfect, and the user experience is getting improved.
