@@ -1,0 +1,170 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#############################################
+#     Recherche d'orbitales moleculaires    #
+#                                           #
+#                             2012          #
+#############################################
+
+import os
+import sys
+from dftb import parse
+
+helptxt = """omfinder [opt] [args] [fileIn]
+Extracts level number of orbitals corresponding to [args]
+
+Opt details:
+o: searches in occupied levels (default)
+l: searches in unoccupied levels
+
+Args details:
+-s <value>: OM level is > to value
+-i <value>: OM level is < to value
+-n <value>: n bigger OM contributions (default, with value 10)
+
+fileIn:
+*band.out to search in. default is band.out
+
+Examples:
+omfinder
+searches the 10 bigger occupied orbitals contributions in band.out
+
+Args details:
+omfinder l -s -1.6 -i 0.8 CHN_band.out
+searches all unoccupied levels between -1.6 and 0.8
+"""
+
+def parseargs(args):
+  #default values
+  cpt = 0
+  minVal = -900.0
+  maxVal = 900.0
+  nOrb = 10
+  fileIn='band.out'
+  bOccup = True
+  bUnoc = False
+  gamme = ''
+  
+  #parse options
+  del(args[0])
+  if "o" not in args[0] and "l" in args[0]:
+    bOccup = False
+  if "l" in args[0]:
+    bUnoc = True
+  if "l" in args[0] or "o" in args[0]:
+    del(args[0])
+  
+  print 'Niveaux occupés/inoccupés: %s/%s'%(bOccup,bUnoc)
+  #get filename
+  if ".out" in args[-1]:
+    fileIn = args[-1]
+    del(args[-1])
+  
+  #parse args
+  for i in args:
+    if i=="-s":
+      try:
+	minVal=float(args[cpt + 1])
+      except:
+	sys.exit("incorrect value for option -s, float number expected")
+    elif i=="-i":
+      try:
+	maxVal=float(args[cpt + 1])
+      except:
+	sys.exit("incorrect value for option -i, float number expected")
+    elif i=="-n":
+      try:
+	nOrb=int(args[cpt + 1])
+      except:
+	sys.exit("incorrect value for option -n, integer number expected")
+    cpt += 1
+  if minVal == -900.0:
+    gamme = 'None:'
+  else:
+    gamme = '%s:'%(str(minVal))
+  if maxVal == 900.0:
+    gamme += 'None'
+  else:
+    gamme += '%s'%(str(maxVal))
+  print 'Gamme: [%s]'%gamme
+  
+  print 'Fichier: %s\n'%fileIn
+  return minVal,maxVal,nOrb,fileIn,bOccup,bUnoc
+  
+
+if __name__ == "__main__":
+  oldFormat = False
+  finalLines=[]
+  contribs=[]
+  
+  #lecture des arguments
+  if len(sys.argv)>=2:
+    minVal,maxVal,nOrb,fileIn,bOccup,bUnoc = parseargs(sys.argv)
+  else:
+    sys.exit(helptxt)
+  
+  #lecture du fichier
+  try:
+    with open(fileIn,'r') as f:
+      content = f.readlines()
+  except:
+    sys.exit('%s not found'%fileIn)
+    
+  #recuperation de la bonne gamme de niveaux
+  eigcpt = 1
+  eig = []
+  for line in content[1:]:
+    pLine = parse(line)
+    if pLine == [] or 'KPT' in line:
+      break
+    if len(pLine)==2:
+      if oldFormat==False:
+	print('!! unable to distinguish occupied levels from unoccupied levels !!\n')
+	oldFormat=True
+      if float(pLine[0]) >= minVal and float(pLine[0]) <= maxVal:
+	finalLines.append(line)
+	contribs.append(float(pLine[1]))
+	eig.append(eigcpt)
+      continue
+    else:
+      if float(pLine[0]) >= minVal and float(pLine[0]) <= maxVal:
+	if float(pLine[2])>=0.1 and bOccup==True:
+	  finalLines.append(line)
+	  contribs.append(float(pLine[1]))
+	  eig.append(eigcpt)
+	elif float(pLine[2])<0.1 and bUnoc==True:
+	  finalLines.append(line)
+	  contribs.append(float(pLine[1]))
+	  eig.append(eigcpt)
+	else:
+	  continue
+    eigcpt += 1
+
+  for i in range(len(finalLines)-nOrb):
+    del(finalLines[contribs.index(min(contribs))])
+    del(eig[contribs.index(min(contribs))])
+    del(contribs[contribs.index(min(contribs))])
+  
+  for i in range(len(finalLines)):
+    print str(eig[i]).ljust(8)+' '+finalLines[i].replace('\n','')
+  
+  print ' '
+  print ' '.join([str(i) for i in eig])
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

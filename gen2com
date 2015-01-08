@@ -1,0 +1,105 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#############################################
+#                                           #
+#          Gen -> Com converter             #
+#              S.Nenon 2012                 #
+#                                           #
+#############################################
+
+import os
+import os.path
+import sys
+from dftb.genClass import *
+
+
+##################################################################################################################################################
+# Aide 
+help='''\n\n==Help==
+Syntax:
+  gen2com [filein] [fileout]
+  gen2com *
+
+Converts filein in fileout
+[filein]    must be a .gen file. 
+[fileout]   optional: specify the .com outfile name. Default: <filein>.com (<filein>_001.com if it already exists)
+*           will convert all .gen files in current folder
+\n'''
+
+########################### parse args
+nArgs = len(sys.argv)
+filelist = []
+if nArgs < 2: # no args case
+  sys.exit('Error in arguments syntax.\n'+help)
+
+elif nArgs == 2:# 1 arg
+  if sys.argv[1][-4:] != '.gen' or not os.path.exists(sys.argv[1]):
+    sys.exit('Input file ('+sys.argv[1]+') must be a valid .gen file in the current folder.\n'+help)
+  else:
+    filein = sys.argv[1]
+    cpt = 1
+    fileout = sys.argv[1][:-4]+'.com'
+    while os.path.exists(fileout):
+      fileout = sys.argv[1][:-4]+'_'+("%d"%cpt).zfill(3)+'.com'
+      cpt += 1
+    filelist.append([filein,fileout])
+elif nArgs == 3: # 2 args
+  if sys.argv[1][-4:] != '.gen' or not os.path.exists(sys.argv[1]):
+    sys.exit('Input file ('+sys.argv[1]+') must be a valid .gen file in the current folder.\n'+help)
+  if sys.argv[2][-4:] != '.com':
+    answer = ''
+    while answer != 'y' and answer != 'n':
+      answer = raw_input('Output file ('+sys.argv[2]+') should be a .com file. Proceed? (y/n)\n')
+    if answer == 'n':
+      sys.exit('retry with another name')
+    else:
+      fileout = sys.argv[2]
+      filestart,filext = fileout.split('.')
+      cpt = 1
+      while os.path.exists(fileout):
+        fileout = filestart+'_'+("%d"%cpt).zfill(3)+'.'+filext
+        cpt += 1
+  filein = sys.argv[1]
+  filelist.append([filein,fileout])
+
+elif nArgs > 3: # case with *
+  for i in sys.argv[1:]:
+    if '.gen' in i:
+      filein = i
+      fileout = filein.split('.')[0]+'.com'
+      filestart,filext = fileout.split('.')
+      cpt = 1
+      while os.path.exists(fileout):
+        fileout = filestart+'_'+("%d"%cpt).zfill(3)+'.'+filext
+        cpt += 1
+      filelist.append([filein,fileout])
+
+if len(filelist) == 0:
+  sys.exit('Nothing to convert...'+help)
+  
+########################### main
+for filein,fileout in filelist:
+  print('Conversion of %s in %s'%(filein,fileout))
+  #try:
+  genFile(filein).writeCom(fileout)
+  print('Done\n')
+  #except:
+  #  print('Error......\n')
+print('==== Finished! ====')
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

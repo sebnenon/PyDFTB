@@ -1,0 +1,29 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+from dftb.tkatoms import atoms
+import argparse
+import sys
+
+
+
+parser = argparse.ArgumentParser(description="! Converts a tinker xyz into a g09 com",epilog="Caution: multiplicity is set to 1  !")
+parser.add_argument('filein_name', type=str, help="File to convert (.xyz)")
+args = parser.parse_args()
+filename = args.filein_name[:-4]
+
+try:
+    with open(filename+'.xyz','r') as buff:
+        content=[x.strip().split() for x in buff.readlines()]
+except:
+    sys.exit('Error: file not found: '+filename+'.xyz')
+
+
+with open(filename+'.com','w') as buff:
+    buff.write('# opt hf/6-31G\n\ncomment\n\n0 1\n')
+    for i in content:
+        try:
+           buff.write('{:5s} {:15.6f} {:15.6f} {:15.6f}\n'.format(atoms[i[5]],float(i[2]),float(i[3]),float(i[4])))
+        except:
+            print 'Ignored line: '+' '.join(i)
+print 'done'

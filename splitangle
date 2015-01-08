@@ -1,0 +1,82 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#############################################
+#                                           #
+#                        splitangle         #
+#                            S.Nenon 2012   #
+#                                           #
+#############################################
+
+from dftb.genClass import genFile
+import dftb.geometry as gEom
+import sys
+import os.path
+import numpy as np
+
+help = """
+splitangle permits to rotate a geometry from vector1 to vector 2 (rotation of \
+angle defined by vec1.vec2, around axis normal to (vec1, vec2) plane with n st\
+eps.
+Useful to align dipole on an axis.
+
+Syntax:
+    splitangle <filein> <vector1> <vector2> <n>
+
+<filein> .gen geometry file in current folder
+<vector1> and <vector2>:    vectors.
+
+vectors can be specified in two formats: cartesian coordinates or axis name
+
+
+Examples:
+    splitangle in.gen x z                            rotation around y, x axis\
+ becomes z
+    splitangle in.gen 1.0 0.0 0.0 0.0 0.0 1.0        the same in cartesian
+"""
+vec_dic = {'x': [1., 0., 0.], 'y': [0., 1., 0.], 'z': [0., 0., 1.]}
+
+# parse args ==============================================================
+if len(sys.argv) not in [9, 7, 5]:
+    sys.exit('Incorrect argument number\n'+help)
+
+# filename
+if '.gen' not in sys.argv[1] or not os.path.exists(sys.argv[1]):
+    sys.exit('First argument should be a .gen file in current folder\n'+help)
+else:
+    filein = sys.argv[1]
+# vectors
+vec1 = []
+vec2 = []
+try:
+    for i in sys.argv[2: 5]:
+        vec1.append(float(i))
+except:
+    try:
+        vec1 = vec_dic[str.lower(sys.argv[2])]
+    except:
+        sys.exit('Vector 1 should be an axis name or 3 floating values\n'+help)
+
+try:
+    for i in sys.argv[-4: -1]:
+        vec2.append(float(i))
+except:
+    try:
+        vec2 = vec_dic[str.lower(sys.argv[-2])]
+    except:
+        sys.exit('Vector 2 should be an axis name or 3 floating values\n'+help)
+n = int(sys.argv[-1])
+
+# main ==============================================================
+
+geoms = gEom.splitangle(vec1, vec2, n)
+print "{:15s} {:15s} {:15s} {:15s} {:15s}".format("Theta (deg)",
+                                                  "cos^3(Theta)",
+                                                  "x", "y", "z")
+for i in geoms:
+    dd = np.degrees(np.arccos(np.dot(vec1, [i[0], i[1], i[2]])))
+    dd2 = np.dot(vec1, [i[0], i[1], i[2]])**3
+    print "{:15.2f} {:15.10f} {:15.10f} {:15.10f} {:15.10f}".format(dd,
+                                                                    dd2,
+                                                                    i[0],
+                                                                    i[1],
+                                                                    i[2])

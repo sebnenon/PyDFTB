@@ -1,0 +1,51 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#############################################
+#                                           #
+#            geomodif                       #
+#              S.Nenon 2013                 #
+#                                           #
+#############################################
+
+from dftb.genClass import genFile
+import sys,os.path
+import argparse
+
+
+#============ parsing args ====================================================
+parser = argparse.ArgumentParser(description="Permits to realign and move a \
+                                dftb gen file",epilog="") 
+parser.add_argument('filein_name', type=str, help="File to apply the \
+                    modification to (.gen)")
+group = parser.add_mutually_exclusive_group()
+group.add_argument('-b', '--bary', action='store_true', dest='bary', 
+                    default='False', help='Set the barycenter at 0,0,0')
+group.add_argument('-c', '--center', action='store_true', dest='center', 
+                    default='False', 
+                    help='Set the barycenter at the center of \
+                    the cell')
+group.add_argument('-r', '--rot', action='store_true', dest='rot', 
+                    default='False', help='Rotation of the system, so that \
+                    vector1 (axis1) is colinear to vector2 (axis2)')
+group.add_argument('-t', '--trans', action='store_true', dest='trans', 
+                    default='False', help='Translation of the system along \
+                    vector1')
+
+v1group = parser.add_mutually_exclusive_group()
+v1group.add_argument('-v1', '--vector1', type=float, nargs=3, help="Cartesian \
+                    coordinates of vector1")
+v1group.add_argument('-a1', '--axis1', choices=['x','y','z'], help="Axis to \
+                    use as a first vector (unitary)")
+
+v2group = parser.add_mutually_exclusive_group()
+v2group.add_argument('-v2', '--vector2', type=float, nargs=3, help="Cartesian \
+                    coordinates of vector2")
+v1group.add_argument('-a2', '--axis2', choices=['x','y','z'], help="Axis to \
+                    use as a second vector (unitary)")
+
+args = parser.parse_args()
+
+#============ verifying args ==================================================
+if not os.path.exists(args.filein_name) or \
+ os.path.splitext(args.filein_name)[1] != '.gen':
+    sys.exit('Non valid .gen file')

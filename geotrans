@@ -1,0 +1,56 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#############################################
+#                                           #
+#            geotrans                        #
+#              S.Nenon 2012                 #
+#                                           #
+#############################################
+
+from dftb.genClass import genFile
+import sys,os.path
+
+help="""
+geotrans permits to translate a geometry along vector1.
+
+Syntax:
+  geotrans <filein> <vector1> [fileout]
+
+<filein>                  .gen geometry file in current folder
+[fileout]                 outfile name (default = translated.gen)
+<vector1>                 vector specified in cartesian coordinates (x y z).
+
+Example:
+  geotrans in.gen 12.0 25.0 0.0756
+"""
+
+# parse args ==============================================================
+if len(sys.argv) not in [5,6]:
+  sys.exit('Incorrect argument number\n'+help)
+
+# filename
+if not '.gen' in sys.argv[1] or not os.path.exists(sys.argv[1]):
+  sys.exit('First argument should be a .gen file in current folder\n'+help)
+else:
+  filein = sys.argv[1]
+try:
+    fileout = sys.argv[5]
+except:
+    fileout = 'translated.gen'
+
+# vectors
+vec1 = []
+try:
+  for i in sys.argv[2:5]:
+    vec1.append(float(i))
+except:
+    sys.exit('Vector should be specified as a 3 floating values vector\n'+help)
+
+
+
+# main ==============================================================
+
+gF = genFile(filein)
+gF.trans(vec1)
+gF.savegen(fileout)
+

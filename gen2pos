@@ -1,0 +1,62 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#############################################
+#                                           #
+#          Gen -> Pos converter             #
+#              S.Nenon 2014                 #
+#                                           #
+#############################################
+
+import os
+import os.path
+import sys
+from dftb.genClass import *
+
+
+##################################################################################################################################################
+# Aide 
+help='''\n\n==Help==
+Syntax:
+  gen2pos [filein] 
+
+
+Converts filein in fileout
+[filein]    must be a valid .gen file. 
+
+\n'''
+
+########################### parse args
+try:
+	filein=sys.argv[1]
+	test=os.path.isfile(filein)
+except:
+	sys.exit('Error with input file'+help)
+
+
+
+
+  
+########################### main
+
+print('Conversion of {} in POSCAR'.format(filein))
+genFile(filein).writePos()
+print('Done\n')
+
+print('==== Finished! ====')
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

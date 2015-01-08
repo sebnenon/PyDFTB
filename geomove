@@ -1,0 +1,68 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#############################################
+#                                           #
+#            geomove                        #
+#              S.Nenon 2012                 #
+#                                           #
+#############################################
+
+from dftb.genClass import genFile
+import sys,os.path
+
+help="""
+geomove permits to rotate a geometry from vector1 to vector 2 (rotation of angle defined by vec1.vec2, around axis normal to (vec1,vec2) plane.
+Useful to align dipole on an axis.
+
+Syntax:
+  geomove <filein> <vector1> <vector2>
+
+<filein>                  .gen geometry file in current folder
+<vector1> and <vector2>:  vectors.
+
+vectors can be specified in two formats: cartesian coordinates or axis name
+
+
+Examples:
+  geomove in.gen x z                        rotation around y, x axis becomes z
+  geomove in.gen 1.0 0.0 0.0 0.0 0.0 1.0    the same in cartesian
+"""
+vec_dic = {'x':[1.,0.,0.], 'y':[0.,1.,0.], 'z':[0.,0.,1.]}
+
+# parse args ==============================================================
+if len(sys.argv) not in [8,6,4]:
+  sys.exit('Incorrect argument number\n'+help)
+
+# filename
+if not '.gen' in sys.argv[1] or not os.path.exists(sys.argv[1]):
+  sys.exit('First argument should be a .gen file in current folder\n'+help)
+else:
+  filein = sys.argv[1]
+# vectors
+vec1 = []
+vec2 = []
+try:
+  for i in sys.argv[2:5]:
+    vec1.append(float(i))
+except:
+  try:
+    vec1 = vec_dic[str.lower(sys.argv[2])]
+  except:
+    sys.exit('Vector 1 should be an axis name or 3 floating values\n'+help)
+
+try:
+  for i in sys.argv[-3:]:
+    vec2.append(float(i))
+except:
+  try:
+    vec2 = vec_dic[str.lower(sys.argv[-1])]
+  except:
+    sys.exit('Vector 2 should be an axis name or 3 floating values\n'+help)
+
+# main ==============================================================
+
+gF = genFile(filein)
+gF.rot(vec1,vec2)
+#gF.geo2bary()
+gF.savegen('saved.gen')
+

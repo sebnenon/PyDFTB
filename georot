@@ -1,0 +1,55 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#############################################
+#                                           #
+#            georot                         #
+#              S.Nenon 2014                 #
+#                                           #
+#############################################
+
+from dftb.genClass import genFile
+import sys,os.path
+
+help="""
+geomove permits to rotate a geometry around an axis from an angle defined in degrees.
+
+Syntax:
+  geomove <filein> <axis> <angle> 
+
+<filein>                  .gen geometry file in current folder
+
+
+
+"""
+vec_dic = {'x':[1.,0.,0.], 'y':[0.,1.,0.], 'z':[0.,0.,1.]}
+
+# parse args ==============================================================
+if len(sys.argv) != 4:
+  sys.exit('Incorrect argument number\n'+help)
+
+# filename
+if not '.gen' in sys.argv[1] or not os.path.exists(sys.argv[1]):
+  sys.exit('First argument should be a .gen file in current folder\n'+help)
+else:
+  filein = sys.argv[1]
+
+ang=[]
+
+try:
+	for i in vec_dic[sys.argv[2]]:
+		ang.append(i*float(sys.argv[3]))
+except:
+	sys.exit('Misspecified arguments'+help)
+# angles
+
+xangle,yangle,zangle=ang[0],ang[1],ang[2]
+
+
+
+
+# main ==============================================================
+
+gF = genFile(filein)
+gF.rotangle(xangle,yangle,zangle)
+gF.savegen('saved.gen')
+

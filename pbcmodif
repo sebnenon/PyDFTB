@@ -1,0 +1,149 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#############################################
+#                                           #
+#            pbcmodif                       #
+#              S.Nenon 2013                 #
+#                                           #
+#############################################
+
+from dftb.genClass import genFile
+import sys,os.path
+import argparse
+import operator
+from math import sqrt,pow
+
+
+#============ parsing args ====================================================
+parser = argparse.ArgumentParser(description="Permits to modify a supercell",epilog="All factors have to be integers.\n Be carefull when reducing optimized cells, this is an experimental code, don't forget to verify the structures yourself.")
+
+parser.add_argument('-r','--r',action='store_const',dest='reduce',const=True,default=False, help="Does a supercell reduction instead of replication") 
+parser.add_argument('-a', '--a', dest='aFactor',default=1, type=int, help="Defines the factor to be applied to 1st lattice vector (a)")
+parser.add_argument('-b', '--b', dest='bFactor',default=1, type=int, help="Defines the factor to be applied to 2nd lattice vector (b)")
+parser.add_argument('-c', '--c', dest='cFactor',default=1, type=int, help="Defines the factor to be applied to 3rd lattice vector (c)")
+parser.add_argument('-o', '--o', dest='fileout_name',default='new_pbc', type=str, help="Defines the name of the output file, without extension")
+parser.add_argument('filein_name', type=str, help="File to apply the modification to (.gen)")
+args = parser.parse_args()
+
+#============ verifying args ====================================================
+print "{:=^40}\n".format(' Parsing and verifying arguments ')
+filein_name = args.filein_name
+aFactor = args.aFactor
+bFactor = args.bFactor
+cFactor = args.cFactor
+fileout_name = args.fileout_name+'.gen'
+reduce = args.reduce
+
+if not os.path.exists(filein_name) or filein_name[-4:]!=".gen":
+        sys.exit('The file must be a valid and existing .gen file')
+
+if aFactor == 1 and bFactor == 1 and cFactor == 1:
+        sys.exit('This useless operation (unitary transformation) won\'t be achieved')
+
+if reduce:
+        act = "reduced"
+        sign = "/"
+else:
+        act = "increased"
+        sign = "x"
+
+print("Source file: {0}\nNew {1} vectors:\na: a{2}{3}\nb: b{2}{4}\nc: c{2}{5}\nOutfile: {6} ".format(filein_name,act,sign,aFactor,bFactor,cFactor,fileout_name))
+
+#============ get data and prepare ====================================================
+print "\n{:=^40}\n".format(' Data asquisition ')
+gF = genFile(filein_name)
+latt = gF.lattice
+geom = gF.geometry
+at_number = gF.n_atoms
+if reduce and at_number%(aFactor*bFactor*cFactor)!=0:
+        sys.exit('Reduction impossible, reductions factors owe to a bad unit cell. Change them and retry.')
+new_geom = []
+new_latt = [latt[0]]
+minx = 9999.0
+miny = 9999.0
+minz = 9999.0
+for at in geom:
+        minx = min(minx,at[2])
+        miny = min(miny,at[3])
+        minz = min(minz,at[4])
+
+
+#============ loop on atoms ====================================================
+print "\n{:=^40}\n".format(' Processing ')
+if reduce:
+        # def new lattice
+        for i in latt[1:]:
+                new_latt.append([i[0]/aFactor,i[1]/bFactor,i[2]/cFactor])
+        # move atoms outside the cell into the cell
+        geotemp = []
+        for at in geom:
+                geotemp.append([at[0],at[1],at[2]%latt[1][0],at[3]%latt[2][1],at[4]%latt[3][2]])
+        minx = 9999.0
+        miny = 9999.0
+        minz = 9999.0
+        for at in geotemp:
+                minx = min(minx,at[2])
+                miny = min(miny,at[3])
+                minz = min(minz,at[4])
+        # gen reduced cell
+        cpt=1
+        for atom in geotemp:
+                if atom[2]<(new_latt[1][0]) and atom[3]<(new_latt[2][1]) and  atom[4]<(new_latt[3][2]):
+                        new_geom.append([cpt,atom[1],atom[2],atom[3],atom[4]])
+                        cpt+=1
+else:
+        # gen replicated cell
+        for atom in geom:
+                cpt = 0
+                for x in range(aFactor):
+                        for y in range(bFactor):
+                                for z in range(cFactor):
+                                        new_geom.append([atom[0]+cpt*at_number,atom[1],atom[2]+x*(latt[1][0]+latt[2][0]+latt[3][0]),atom[3]+y*(latt[1][1]+latt[2][1]+latt[3][1]),atom[4]+z*(latt[1][2]+latt[2][2]+latt[3][2])])
+                                        cpt += 1
+        for i in latt[1:]:
+                new_latt.append([i[0]*aFactor,i[1]*bFactor,i[2]*cFactor])
+print "New lattice vectors:"
+for i in new_latt[1:]:
+        print "{0[0]:0<10} {0[1]:0<10} {0[2]:0<10}".format(i)
+
+
+#============ verification ====================================================
+print "\n{:=^40}\n".format(' Verification ')
+verif = False
+leni = len(gF.geometry)
+lenf = len(new_geom)
+
+if reduce:
+        if lenf*(aFactor*bFactor*cFactor) == leni:
+                lastmess = "Verified: system OK"
+        else:
+                lastmess = "An error seemed to occur due to atoms out of the cell. Verifying the structures...\n"
+                verif = True
+else:
+        if leni*(aFactor*bFactor*cFactor) == lenf:
+                lastmess = "Verified: system OK"
+        else:
+                lastmess = "An error seemed to occur due to atoms out of the cell. Verifying the structures...\n"
+                verif = True
+
+print "\n"+lastmess+"\n"
+
+if verif:
+        found = False
+        for i in range(lenf):
+             for j in range(i+1,lenf):
+                norm = sqrt(pow((new_geom[i][2]-new_geom[j][2]),2)+pow((new_geom[i][3]-new_geom[j][3]),2)+pow((new_geom[i][4]-new_geom[j][4]),2))
+                if norm <=0.7:
+                        found = True
+                        print "Error found, 2 atoms at a distance of {}".format(norm)
+                        print new_geom[i]
+                        print new_geom[j]
+        if not found:
+                print "No atoms superposed, supplementary atom(s) not identified...\n"
+
+#============ generating outfiles ====================================================
+print "\n{:=^40}\n".format(' Generating file ')
+gF.geometry = sorted(new_geom, key=operator.itemgetter(0))
+gF.n_atoms = lenf
+gF.lattice = new_latt
+gF.savegen(fileout_name)
